@@ -132,7 +132,7 @@ func Format(t time.Time, pid int, level Level, msg string, kv ...any) string {
 	b.WriteByte(' ')
 	msg = oneLine(msg)
 	if msg == "" || strings.ContainsRune(msg, '=') || strings.HasPrefix(msg, `"`) {
-		b.WriteString(strconv.Quote(msg))
+		b.WriteString(quote(msg))
 	} else {
 		b.WriteString(msg)
 	}
@@ -270,13 +270,55 @@ func validKey(k string) bool {
 }
 
 func formatValue(v string) string {
-	if v == "" || strings.ContainsAny(v, ` "=`) || strings.IndexFunc(v, unicode.IsControl) >= 0 || !utf8Valid(v) {
-		return strconv.Quote(v)
+	v = strings.ToValidUTF8(v, "�")
+	if v == "" || strings.ContainsAny(v, ` "=`) || strings.IndexFunc(v, unicode.IsControl) >= 0 {
+		return quote(v)
 	}
 	return v
 }
 
-func utf8Valid(s string) bool { return strings.ToValidUTF8(s, "�") == s }
+// quote is the line's quoting, the same in every implementation (testdata/golden.json):
+// `"` and `\` and Go's short escapes (\n \r \t \a \b \f \v), other control characters
+// as \xNN (below U+0080) or \uNNNN, and everything else as it is. strconv.Quote isn't
+// it: it also escapes printable-looking characters such as U+00A0 and U+2028, which the
+// other implementations write as they are. strconv.Unquote reads it back.
+func quote(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '"':
+			b.WriteString(`\"`)
+		case '\\':
+			b.WriteString(`\\`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		case '\a':
+			b.WriteString(`\a`)
+		case '\b':
+			b.WriteString(`\b`)
+		case '\f':
+			b.WriteString(`\f`)
+		case '\v':
+			b.WriteString(`\v`)
+		default:
+			switch {
+			case r < 0x20 || r == 0x7f:
+				fmt.Fprintf(&b, `\x%02x`, r)
+			case unicode.IsControl(r):
+				fmt.Fprintf(&b, `\u%04x`, r)
+			default:
+				b.WriteRune(r)
+			}
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
+}
 
 // oneLine keeps a message on its line: line breaks become " | ", tabs spaces, other
 // control characters go.

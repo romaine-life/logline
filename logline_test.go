@@ -165,3 +165,12 @@ func TestPanicIsLoggedAndContinues(t *testing.T) {
 	defer l.Panic()
 	panic("boom")
 }
+
+// Invalid UTF-8 in a value is written as U+FFFD, as every implementation's strings
+// (which can't hold it) would have it.
+func TestInvalidUTF8InAValueBecomesTheReplacementCharacter(t *testing.T) {
+	line := Format(time.Date(2026, 1, 2, 3, 4, 5, 6e6, time.UTC), 9, Info, "x", "v", "a\xffb")
+	if !strings.HasSuffix(line, " info x v=a�b") {
+		t.Fatal(line)
+	}
+}

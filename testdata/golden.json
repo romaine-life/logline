@@ -31,5 +31,9 @@
   {"note": "non-ASCII text stays as it is",
    "time": "2026-01-02T03:04:05.006-08:00", "pid": 9, "level": "info",
    "message": "café ⚔️ done", "fields": [["who", "Zoë"]],
-   "line": "2026-01-02T03:04:05.006-08:00 pid=9 info café ⚔️ done who=Zoë"}
+   "line": "2026-01-02T03:04:05.006-08:00 pid=9 info café ⚔️ done who=Zoë"},
+  {"note": "invisible characters that aren't control characters (no-break space, zero-width space, line separator) are written as they are, bare or inside quotes; a C1 control character is escaped as \\uNNNN, a C0 one as \\xNN",
+   "time": "2026-01-02T03:04:05.006-08:00", "pid": 9, "level": "info",
+   "message": "odd spaces here", "fields": [["nbsp", "a b"], ["zw", "a​b"], ["ls", "a b"], ["quoted", "x y z"], ["c1", "a\u0085b"], ["c0", "a\u0001b"]],
+   "line": "2026-01-02T03:04:05.006-08:00 pid=9 info odd spaces here nbsp=a b zw=a​b ls=a b quoted=\"x y z\" c1=\"a\\u0085b\" c0=\"a\\x01b\""}
 ]
