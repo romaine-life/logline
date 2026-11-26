@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The home estate's one log line (AHT-204). No packages: a program compiles these
+       sources in, or references this project (README.md, Using it, C#). -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>RomaineLife.Logline</RootNamespace>
+    <AssemblyName>RomaineLife.Logline</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Logline.Tests" />
+  </ItemGroup>
+</Project>

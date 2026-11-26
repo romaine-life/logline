@@ -1,0 +1,22 @@
+{
+  "name": "@romaine-life/logline",
+  "version": "0.0.0-development",
+  "description": "The home estate's one log line, written and read the same way as the Go package: format, parse, a file or stream Logger, redact.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://forgejo.romaine.life/romaine-life/logline.git"
+  },
+  "type": "module",
+  "exports": "./js/logline.mjs",
+  "files": [
+    "js/logline.mjs"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint": "node --check js/logline.mjs && node --check js/logline.test.mjs",
+    "test": "node --test js/logline.test.mjs"
+  }
+}
