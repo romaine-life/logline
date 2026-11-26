@@ -490,6 +490,11 @@ public static class LogLine
         (Secret(@"(?i)" + WordStart + @"(basic[\t\n\f\r ]+)[a-z0-9._~+/=-]{8,}"), Keep),
         // NAME=value and "name": "value", for the names credentials go by.
         (Secret(@"(?i)" + WordStart + @"((?:token|password|passwd|secret|api[_-]?key|access[_-]?key|client[_-]?secret|pat|bw_session)""?[\t\n\f\r ]*[=:][\t\n\f\r ]*""?)[^\t\n\f\r '""&]+"), Keep),
+        // Any name ending in token or _secret, code_verifier and authorization, also in
+        // single quotes, keeping an Authorization scheme; a value of digits alone stays.
+        (Secret(@"(?i)" + WordStart + @"((?:[A-Za-z0-9_-]*(?:token|[_-]secret)|code[_-]?verifier|authorization)[""']?[\t\n\f\r ]*[=:][\t\n\f\r ]*[""']?(?:(?:bearer|token|basic)[\t\n\f\r ]+)?)[^\t\n\f\r '""&,;}]*[^\t\n\f\r '""&,;}0-9][^\t\n\f\r '""&,;}]*"), Keep),
+        // A Cookie or Set-Cookie value, every cookie in it, to the end of the line or quote.
+        (Secret(@"(?i)" + WordStart + @"((?:set-)?cookie[""']?[\t\n\f\r ]*[=:][\t\n\f\r ]*[""']?)[^\t\n\f\r '""][^\n\r'""]*"), Keep),
         // A command's flag: --token x, --password=x.
         (Secret(@"(?i)(--(?:token|password|secret|api-key|client-secret)[= ])[^\t\n\f\r '""]+"), Keep),
         // The user and password in a URL.

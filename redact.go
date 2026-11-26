@@ -26,6 +26,13 @@ var secrets = []struct {
 	{regexp.MustCompile(`(?i)\b(basic[\t\n\f\r ]+)[a-z0-9._~+/=-]{8,}`), "${1}" + Marker},
 	// NAME=value and "name": "value", for the names credentials go by.
 	{regexp.MustCompile(`(?i)\b((?:token|password|passwd|secret|api[_-]?key|access[_-]?key|client[_-]?secret|pat|bw_session)"?[\t\n\f\r ]*[=:][\t\n\f\r ]*"?)[^\t\n\f\r '"&]+`), "${1}" + Marker},
+	// Any name ending in token or _secret (refresh_token, id_token, accessToken,
+	// X-Auth-Token), code_verifier and authorization, in those forms or a Python or
+	// JavaScript dict's single quotes, keeping an Authorization scheme. A value of digits
+	// alone is a count or a page number, not a credential, and stays.
+	{regexp.MustCompile(`(?i)\b((?:[A-Za-z0-9_-]*(?:token|[_-]secret)|code[_-]?verifier|authorization)["']?[\t\n\f\r ]*[=:][\t\n\f\r ]*["']?(?:(?:bearer|token|basic)[\t\n\f\r ]+)?)[^\t\n\f\r '"&,;}]*[^\t\n\f\r '"&,;}0-9][^\t\n\f\r '"&,;}]*`), "${1}" + Marker},
+	// A Cookie or Set-Cookie value, every cookie in it, to the end of the line or quote.
+	{regexp.MustCompile(`(?i)\b((?:set-)?cookie["']?[\t\n\f\r ]*[=:][\t\n\f\r ]*["']?)[^\t\n\f\r '"][^\n\r'"]*`), "${1}" + Marker},
 	// A command's flag: --token x, --password=x.
 	{regexp.MustCompile(`(?i)(--(?:token|password|secret|api-key|client-secret)[= ])[^\t\n\f\r '"]+`), "${1}" + Marker},
 	// The user and password in a URL.

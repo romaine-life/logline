@@ -381,6 +381,17 @@ static SECRETS: std::sync::LazyLock<Vec<(regex::Regex, String)>> = std::sync::La
                 r#"(?i)(?-u:\b)((?:token|password|passwd|secret|api[_-]?key|access[_-]?key|client[_-]?secret|pat|bw_session)"?[\t\n\f\r ]*[=:][\t\n\f\r ]*"?)[^\t\n\f\r '"&]+"#,
                 keep.clone(),
             ),
+            // Any name ending in token or _secret, code_verifier and authorization, also in
+            // single quotes, keeping an Authorization scheme; a value of digits alone stays.
+            (
+                r#"(?i)(?-u:\b)((?:[A-Za-z0-9_-]*(?:token|[_-]secret)|code[_-]?verifier|authorization)["']?[\t\n\f\r ]*[=:][\t\n\f\r ]*["']?(?:(?:bearer|token|basic)[\t\n\f\r ]+)?)[^\t\n\f\r '"&,;}]*[^\t\n\f\r '"&,;}0-9][^\t\n\f\r '"&,;}]*"#,
+                keep.clone(),
+            ),
+            // A Cookie or Set-Cookie value, every cookie in it, to the end of the line or quote.
+            (
+                r#"(?i)(?-u:\b)((?:set-)?cookie["']?[\t\n\f\r ]*[=:][\t\n\f\r ]*["']?)[^\t\n\f\r '"][^\n\r'"]*"#,
+                keep.clone(),
+            ),
             // A command's flag: --token x, --password=x.
             (
                 r#"(?i)(--(?:token|password|secret|api-key|client-secret)[= ])[^\t\n\f\r '"]+"#,

@@ -952,6 +952,100 @@ m_name(const char *s, size_t n, size_t i, struct match *m)
 	return 0;
 }
 
+/* The separator after a name: an optional closing quote, =  or :, an optional opening
+ * quote. The end of it, or 0. */
+static size_t
+separator(const char *s, size_t n, size_t p)
+{
+	if (p < n && (s[p] == '"' || s[p] == '\''))
+		p++;
+	p += run_ws(s, n, p);
+	if (p >= n || (s[p] != '=' && s[p] != ':'))
+		return 0;
+	p++;
+	p += run_ws(s, n, p);
+	if (p < n && (s[p] == '"' || s[p] == '\''))
+		p++;
+	return p;
+}
+
+static const char key_stop[] = "\t\n\f\r '\"&,;}";
+
+/* How long the value at p is, if it is not digits alone; else 0. */
+static size_t
+key_value(const char *s, size_t n, size_t p)
+{
+	size_t k, v = run_not(s, n, p, key_stop);
+
+	for (k = p; k < p + v; k++)
+		if (s[k] < '0' || s[k] > '9')
+			return v;
+	return 0;
+}
+
+/* Any name ending in token or _secret, code_verifier and authorization, keeping an
+ * Authorization scheme; a value of digits alone stays. The name is the whole run of
+ * [A-Za-z0-9_-] from i, since what follows it is none of those. */
+static int
+m_key(const char *s, size_t n, size_t i, struct match *m)
+{
+	static const char *names[] = {"code_verifier", "code-verifier", "codeverifier",
+	    "authorization", NULL};
+	static const char *schemes[] = {"bearer", "token", "basic", NULL};
+	size_t k, key, p, q, w, v;
+	int ok = 0;
+
+	if (!is_word(s, n, i) || !starts_word(s, n, i))
+		return 0;
+	key = run_token(s, n, i, 1);
+	if (key >= 5 && iprefix(s, n, i + key - 5, "token"))
+		ok = 1;
+	else if (key >= 7 && (s[i + key - 7] == '_' || s[i + key - 7] == '-') &&
+	    iprefix(s, n, i + key - 6, "secret"))
+		ok = 1;
+	for (k = 0; !ok && names[k] != NULL; k++)
+		ok = strlen(names[k]) == key && iprefix(s, n, i, names[k]);
+	if (!ok || (p = separator(s, n, i + key)) == 0)
+		return 0;
+	for (k = 0; schemes[k] != NULL; k++) {
+		if (!iprefix(s, n, p, schemes[k]))
+			continue;
+		q = p + strlen(schemes[k]);
+		if ((w = run_ws(s, n, q)) > 0 && (v = key_value(s, n, q + w)) > 0) {
+			m->keep = q + w - i;
+			m->end = q + w + v;
+			return 1;
+		}
+		break;
+	}
+	if ((v = key_value(s, n, p)) == 0)
+		return 0;
+	m->keep = p - i;
+	m->end = p + v;
+	return 1;
+}
+
+/* A Cookie or Set-Cookie value, every cookie in it, to the end of the line or quote. */
+static int
+m_cookie(const char *s, size_t n, size_t i, struct match *m)
+{
+	size_t p;
+
+	if (!starts_word(s, n, i))
+		return 0;
+	if (iprefix(s, n, i, "set-cookie"))
+		p = i + 10;
+	else if (iprefix(s, n, i, "cookie"))
+		p = i + 6;
+	else
+		return 0;
+	if ((p = separator(s, n, p)) == 0 || p >= n || strchr(ws_quote, s[p]) != NULL)
+		return 0;
+	m->keep = p - i;
+	m->end = p + run_not(s, n, p, "\n\r'\"");
+	return 1;
+}
+
 /* A command's flag: --token x, --password=x. */
 static int
 m_flag(const char *s, size_t n, size_t i, struct match *m)
@@ -1071,7 +1165,7 @@ m_openbao(const char *s, size_t n, size_t i, struct match *m)
 }
 
 static const matcher secrets[] = {m_query, m_authorization, m_bearer, m_basic, m_name,
-    m_flag, m_userinfo, m_jwt, m_github, m_openbao};
+    m_key, m_cookie, m_flag, m_userinfo, m_jwt, m_github, m_openbao};
 
 char *
 logline_redact(const char *text)

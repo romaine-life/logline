@@ -122,6 +122,8 @@ It holds the estate's one list of credential shapes; a program never keeps its o
 | A URL's credential parameter (`code`, `state`, `sig`, `token`, `access_token`, `password`, `key`, cloud signatures...) | `/callback?code=***&state=***` |
 | An `Authorization` header, a bearer token, basic credentials | `Authorization: Bearer ***` |
 | A name credentials go by, as `NAME=value` or a JSON field (`token`, `password`, `secret`, `api_key`, `client_secret`, `pat`, `BW_SESSION`...) | `PASSWORD=***`, `"password": "***"` |
+| Any name ending in `token` or `_secret` (`refresh_token`, `id_token`, `session_token`, `accessToken`, `X-Auth-Token`...), `code_verifier` and `authorization`, as `NAME=value`, `name: value`, a JSON or single-quoted field, or a URL parameter; a value of digits alone (`"page_token": 2`) is kept, and so are `tokens=3`, `max_tokens`, `token_type` | `refresh_token=***`, `"id_token": "***"` |
+| A `Cookie` or `Set-Cookie` value, every cookie in it, to the end of the line or quote | `Cookie: ***` |
 | A flag (`--token`, `--password`, `--secret`, `--api-key`, `--client-secret`) | `--client-secret ***` |
 | The user and password in a URL | `https://***@forgejo.romaine.life/x` |
 | A JWT, a GitHub token, an OpenBao token | `***` |
