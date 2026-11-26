@@ -1,0 +1,5 @@
+# The Rust crate (rust/) as a workspace from the repository root, where CI and Cargo
+# git dependencies look.
+[workspace]
+members = ["rust"]
+resolver = "3"
