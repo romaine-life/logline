@@ -34,7 +34,7 @@ svc := logline.New(os.Stdout) // a service: its platform ships stdout
 **Rust** (`logline`, by git tag):
 
 ```toml
-logline = { git = "https://github.com/romaine-life/logline", tag = "v0.1.0" }
+logline = { git = "https://forgejo.romaine.life/romaine-life/logline", tag = "v0.1.0" }
 ```
 
 ```rust
@@ -65,4 +65,7 @@ cargo test && cargo clippy --all-targets -- -D warnings
 pipeline-templates' `go`, `rust` and `release` suites, topic `release-module`: a merge
 that changes the code takes the next tag and publishes it with its source; each fleet
 repository whose `go.mod` requires the module gets a take-up PR. Rust users move their git
-tag. The GitHub copy (a push mirror) is what Go and Cargo fetch.
+tag. Go fetches the module by its GitHub path (a push mirror of this repository), which
+the go suite maps to Forgejo; Cargo fetches from Forgejo directly, as pipeline-templates'
+check-fetches requires of git dependencies. The repository is public on both, so a
+docker build reads it with no credentials.

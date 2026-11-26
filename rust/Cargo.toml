@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "The home estate's one log line, written and read the same way as the Go package"
 license = "MIT"
-repository = "https://github.com/romaine-life/logline"
+repository = "https://forgejo.romaine.life/romaine-life/logline"
 publish = false
 
 [dependencies]
