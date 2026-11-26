@@ -349,3 +349,73 @@ fn one_line(text: &str) -> String {
         .collect();
     text.trim().to_string()
 }
+
+/// What [`redact`] writes in place of a credential.
+pub const MARKER: &str = "***";
+
+/// The estate's one list of credential shapes, the Go package's `secrets` exactly (both
+/// run `testdata/redact.json`): each keeps the text that names the credential and
+/// replaces the credential itself. Classes are spelled out in ASCII, and `\b` is the
+/// ASCII word boundary `(?-u:\b)`, so Rust's and Go's regular expressions read them the
+/// same way.
+static SECRETS: std::sync::LazyLock<Vec<(regex::Regex, String)>> = std::sync::LazyLock::new(|| {
+    let keep = format!("${{1}}{MARKER}");
+    [
+            // A URL's query parameter: ?code=, &sig=, &access_token= and the like.
+            (
+                r#"(?i)([?&](?:code|state|sig|signature|token|access_token|id_token|refresh_token|client_secret|password|passwd|secret|key|api_key|apikey|x-goog-signature|x-amz-signature)=)[^&\t\n\f\r "']+"#,
+                keep.clone(),
+            ),
+            // An Authorization header, with or without its scheme.
+            (
+                r#"(?i)(authorization:[\t\n\f\r ]*(?:bearer|token|basic)?[\t\n\f\r ]*)[^\t\n\f\r '"]+"#,
+                keep.clone(),
+            ),
+            (r#"(?i)(bearer[\t\n\f\r ]+)[^\t\n\f\r '"]+"#, keep.clone()),
+            (
+                r"(?i)(?-u:\b)(basic[\t\n\f\r ]+)[a-z0-9._~+/=-]{8,}",
+                keep.clone(),
+            ),
+            // NAME=value and "name": "value", for the names credentials go by.
+            (
+                r#"(?i)(?-u:\b)((?:token|password|passwd|secret|api[_-]?key|access[_-]?key|client[_-]?secret|pat|bw_session)"?[\t\n\f\r ]*[=:][\t\n\f\r ]*"?)[^\t\n\f\r '"&]+"#,
+                keep.clone(),
+            ),
+            // A command's flag: --token x, --password=x.
+            (
+                r#"(?i)(--(?:token|password|secret|api-key|client-secret)[= ])[^\t\n\f\r '"]+"#,
+                keep.clone(),
+            ),
+            // The user and password in a URL.
+            (r#"(://)[^/@\t\n\f\r '"]+@"#, format!("{keep}@")),
+            // A JWT: three parts, or two long ones.
+            (
+                r"eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+                MARKER.to_string(),
+            ),
+            // GitHub tokens, and OpenBao's (hvs., hvb., s., b.).
+            (
+                r"(?-u:\b)(?:gh[pousr]_|github_pat_)[A-Za-z0-9_]{20,}",
+                MARKER.to_string(),
+            ),
+            (
+                r"(?-u:\b)(?:hvs|hvb|s|b)\.[A-Za-z0-9_-]{24,}(?-u:\b)",
+                MARKER.to_string(),
+            ),
+        ]
+        .into_iter()
+        .map(|(pattern, with)| (regex::Regex::new(pattern).expect(pattern), with))
+        .collect()
+});
+
+/// Replaces what looks like a credential in `text` with [`MARKER`], keeping the rest.
+/// Pass it any field or message holding text from outside the program before logging
+/// it: a command's output or arguments, another tool's error text, a URL, a header.
+/// Every home PC's everyday NAS sign-in can read the pile.
+pub fn redact(text: &str) -> String {
+    let mut text = text.to_string();
+    for (pattern, with) in SECRETS.iter() {
+        text = pattern.replace_all(&text, with.as_str()).into_owned();
+    }
+    text
+}

@@ -45,6 +45,31 @@ log.warn("download stalled", &[("step", &"tools"), ("took", &took)]);
 `Parse` (Go) and `parse` (Rust) read a line back and say what doesn't fit the standard;
 log-ship uses it to check what it ships.
 
+## Masking credentials
+
+`Redact` (Go) and `redact` (Rust) replace what looks like a credential with `***`, keeping
+the rest of the text. Pass any field or message through it that holds text from outside the
+program: a command's output or the arguments it was run with, another tool's error text, a
+URL, a header, a container's log line. Text the program writes itself (its own messages,
+counts, paths it chose) needs none.
+
+```go
+log.Error("command failed", "name", name, "error", logline.Redact(err.Error()))
+```
+
+It holds the estate's one list of credential shapes; a program never keeps its own:
+
+| Shape | Example, masked |
+| --- | --- |
+| A URL's credential parameter (`code`, `state`, `sig`, `token`, `access_token`, `password`, `key`, cloud signatures...) | `/callback?code=***&state=***` |
+| An `Authorization` header, a bearer token, basic credentials | `Authorization: Bearer ***` |
+| A name credentials go by, as `NAME=value` or a JSON field (`token`, `password`, `secret`, `api_key`, `client_secret`, `pat`, `BW_SESSION`...) | `PASSWORD=***`, `"password": "***"` |
+| A flag (`--token`, `--password`, `--secret`, `--api-key`, `--client-secret`) | `--client-secret ***` |
+| The user and password in a URL | `https://***@forgejo.romaine.life/x` |
+| A JWT, a GitHub token, an OpenBao token | `***` |
+
+A new shape goes into both implementations and `testdata/redact.json`, which both run.
+
 ## How it fits together
 
 | Path | Holds |
@@ -52,6 +77,7 @@ log-ship uses it to check what it ships.
 | `logline.go` | The Go package: `Format`, `Parse`, `Logger` |
 | `rust/` | The Rust crate, the same API (a workspace member of the root `Cargo.toml`) |
 | `testdata/golden.json` | The cases both implementations write and read identically; a third implementation joins by running it |
+| `redact.go`, `testdata/redact.json` | `Redact` and the cases both implementations mask identically |
 
 ## Testing
 
